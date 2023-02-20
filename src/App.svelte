@@ -1,46 +1,105 @@
 <script lang="ts">
-  import svelteLogo from './assets/svelte.svg'
-  import Counter from './lib/Counter.svelte'
+  import { fetch } from "./lib/reddit";
+  import { writable, derived } from "svelte/store";
+
+  let displayMode = "fit-height";
+  let galleryUrl = writable(window.location.search);
+  let urls = derived(
+    galleryUrl,
+    ($galleryUrl, set) => {
+      fetch($galleryUrl).then((results) => {
+        set(results);
+      });
+    },
+    []
+  );
+
+  const onChange = (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    window.history.pushState(null, "", "?" + target?.value);
+    galleryUrl.set(target?.value);
+  };
 </script>
 
-<main>
-  <div>
-    <a href="https://vitejs.dev" target="_blank" rel="noreferrer"> 
-      <img src="/vite.svg" class="logo" alt="Vite Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer"> 
-      <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-    </a>
-  </div>
-  <h1>Vite + Svelte</h1>
+<body>
+  <nav class="container-fluid">
+    <ul>
+      <li><strong>Reddit Gallery Scroller</strong></li>
+    </ul>
+    <ul>
+      <li>
+        <!-- svelte-ignore a11y-invalid-attribute -->
+        <a
+          href="#"
+          role="button"
+          class="secondary outline"
+          on:click={() => {
+            displayMode = "fit-height";
+          }}>Fit Height</a
+        >
+      </li>
+      <li>
+        <!-- svelte-ignore a11y-invalid-attribute -->
+        <a
+          href="#"
+          role="button"
+          class="secondary outline"
+          on:click={() => {
+            displayMode = "fit-width";
+          }}>Fit Width</a
+        >
+      </li>
+    </ul>
+  </nav>
+  <main class="container">
+    <form>
+      <input
+        type="search"
+        id="search"
+        name="search"
+        placeholder="Paste a Reddit Gallery URL..."
+        on:input={(e) => onChange(e)}
+        on:submit={(e) => e.preventDefault()}
+      />
+    </form>
 
-  <div class="card">
-    <Counter />
-  </div>
-
-  <p>
-    Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
-  </p>
-
-  <p class="read-the-docs">
-    Click on the Vite and Svelte logos to learn more
-  </p>
-</main>
+    <content>
+      {#each $urls as url}
+        <a href={url}>
+          <img class={displayMode} alt={url} src={url} />
+        </a>
+      {/each}
+    </content>
+  </main>
+</body>
 
 <style>
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
+  form {
+    display: flex;
+    align-items: center;
+    justify-items: center;
+    gap: 1rem;
   }
-  .logo:hover {
-    filter: drop-shadow(0 0 2em #646cffaa);
+  form > input {
+    margin: 0;
   }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
+  li > a {
+    font-size: 0.75rem;
   }
-  .read-the-docs {
-    color: #888;
+
+  content {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  :global(.fit-width) {
+    max-width: 97vw;
+  }
+
+  :global(.fit-height) {
+    max-height: 97vh;
   }
 </style>
