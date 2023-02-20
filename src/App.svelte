@@ -2,8 +2,22 @@
   import { fetch } from "./lib/reddit";
   import { writable, derived } from "svelte/store";
 
-  let displayMode = "fit-height";
+  const displayModes = [
+    ["fit-height", "Fit Height"],
+    ["fit-width", "Fit Width"],
+  ];
+  let displayMode = displayModes[0][0];
+  const setDisplayMode = (m: string) => {
+    displayMode = m;
+  };
+
+  // default url is derived from URL query param; on change via text box load new urls.
   let galleryUrl = writable(window.location.search);
+  const onChange = (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    window.history.pushState(null, "", "?" + target?.value);
+    galleryUrl.set(target?.value);
+  };
   let urls = derived(
     galleryUrl,
     ($galleryUrl, set) => {
@@ -13,42 +27,29 @@
     },
     []
   );
-
-  const onChange = (e: Event) => {
-    const target = e.target as HTMLInputElement;
-    window.history.pushState(null, "", "?" + target?.value);
-    galleryUrl.set(target?.value);
-  };
 </script>
 
+<!-- pico.css demands nav and main be children of body, so we're going to
+     wrap the entire app in a fairly harmless second <body> tag. -->
 <body>
   <nav class="container-fluid">
     <ul>
       <li><strong>Reddit Gallery Scroller</strong></li>
     </ul>
     <ul>
-      <li>
-        <!-- svelte-ignore a11y-invalid-attribute -->
-        <a
-          href="#"
-          role="button"
-          class="secondary outline"
-          on:click={() => {
-            displayMode = "fit-height";
-          }}>Fit Height</a
-        >
-      </li>
-      <li>
-        <!-- svelte-ignore a11y-invalid-attribute -->
-        <a
-          href="#"
-          role="button"
-          class="secondary outline"
-          on:click={() => {
-            displayMode = "fit-width";
-          }}>Fit Width</a
-        >
-      </li>
+      {#each displayModes as [mode, label]}
+        <li>
+          <!-- svelte-ignore a11y-invalid-attribute -->
+          <a
+            href="#"
+            role="button"
+            class="secondary outline"
+            on:click={() => setDisplayMode(mode)}
+          >
+            {label}
+          </a>
+        </li>
+      {/each}
     </ul>
   </nav>
   <main class="container">
